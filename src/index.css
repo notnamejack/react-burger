@@ -1,16 +1,34 @@
 body {
   margin: 0;
+  scrollbar-width: auto;
 }
 
-/* Fix for scrollbar */
+/*
+  Баг библиотеки: в @supports она вешает scrollbar-width: thin
+  на body и .custom-scroll. В Chrome это отключает ::-webkit-scrollbar,
+  и полоса начинает плыть по ширине.
+*/
 
-@supports (scrollbar-color: auto) {
+.custom-scroll {
+  scrollbar-width: auto;
+}
+
+.custom-scroll::-webkit-scrollbar {
+  width: 12px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background-color: #2f2f37;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background-color: #8585ad;
+  border: 3px solid #2f2f37;
+  border-radius: 6px;
+}
+
+@supports not selector(::-webkit-scrollbar) {
   .custom-scroll {
-    scrollbar-color: #8585ad #2f2f37;
-    scrollbar-width: thin;
-  }
-
-  body {
     scrollbar-color: #8585ad #2f2f37;
     scrollbar-width: thin;
   }
