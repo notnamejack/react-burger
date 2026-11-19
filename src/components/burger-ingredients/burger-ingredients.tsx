@@ -1,109 +1,129 @@
-import { Counter, CurrencyIcon, Tab } from '@krgaa/react-developer-burger-ui-components';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { Tab } from '@krgaa/react-developer-burger-ui-components';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import type { TConstructorIngredient, TIngredient } from '@utils/types';
+import { IngredientCard } from '@components/ingredient-card/ingredient-card';
+import { useGetIngredientsQuery } from '@services/ingredients/api';
+
+import type { TIngredient } from '@utils/types';
+import type { RefObject } from 'react';
 
 import styles from './burger-ingredients.module.css';
 
-type TBurgerIngredientsProps = {
-  ingredients: TIngredient[];
-  bun: TIngredient | null;
-  fillings: TConstructorIngredient[];
-  onIngredientClick: (ingredient: TIngredient) => void;
-};
+type TTabValue = 'bun' | 'main' | 'sauce';
 
 type TIngredientGroupProps = {
   title: string;
-  items: TIngredient[];
-  counts: Map<string, number>;
-  onIngredientClick: (ingredient: TIngredient) => void;
+  type: TTabValue;
+  ingredients: TIngredient[];
+  headingRef: RefObject<HTMLParagraphElement | null>;
+};
+
+type TTabSection = {
+  value: TTabValue;
+  node: HTMLParagraphElement | null;
+};
+
+const updateCurrentTab = (
+  container: HTMLElement,
+  sections: TTabSection[],
+  setCurrentTab: (value: TTabValue) => void
+): void => {
+  const containerRect = container.getBoundingClientRect();
+  const nearest = sections.reduce<{ value: TTabValue; distance: number } | null>(
+    (closest, section) => {
+      if (!section.node) {
+        return closest;
+      }
+
+      const rect = section.node.getBoundingClientRect();
+      const distance = Math.hypot(
+        rect.left - containerRect.left,
+        rect.top - containerRect.top
+      );
+
+      if (!closest || distance < closest.distance) {
+        return { value: section.value, distance };
+      }
+
+      return closest;
+    },
+    null
+  );
+
+  if (nearest) {
+    setCurrentTab(nearest.value);
+  }
 };
 
 const IngredientGroup = ({
   title,
-  items,
-  counts,
-  onIngredientClick,
+  type,
+  ingredients,
+  headingRef,
 }: TIngredientGroupProps): React.JSX.Element => {
+  const items = ingredients.filter((item) => item.type === type);
+
   return (
     <>
-      <p className="text text_type_main-medium mb-6">{title}</p>
+      <p className="text text_type_main-medium mb-6" ref={headingRef}>
+        {title}
+      </p>
       <ul className={styles.items}>
-        {items.map((item) => {
-          const count = counts.get(item._id) ?? 0;
-
-          return (
-            <li className={styles.item} key={item._id}>
-              <button
-                type="button"
-                className={styles.card}
-                onClick={() => {
-                  onIngredientClick(item);
-                }}
-              >
-                {count > 0 && <Counter count={count} size="default" extraClass="m-1" />}
-                <img className={styles.image} alt={item.name} src={item.image} />
-                <p className={`${styles.price} text text_type_digits-default`}>
-                  {item.price}
-                  <CurrencyIcon type="primary" />
-                </p>
-                <p className={`${styles.name} text text_type_main-default`}>
-                  {item.name}
-                </p>
-              </button>
-            </li>
-          );
-        })}
+        {items.map((item) => (
+          <IngredientCard ingredient={item} key={item._id} />
+        ))}
       </ul>
     </>
   );
 };
 
-export const BurgerIngredients = ({
-  ingredients,
-  bun,
-  fillings,
-  onIngredientClick,
-}: TBurgerIngredientsProps): React.JSX.Element => {
-  const [currentTab, setCurrentTab] = useState('bun');
-  const bunRef = useRef<HTMLLIElement>(null);
-  const sauceRef = useRef<HTMLLIElement>(null);
-  const mainRef = useRef<HTMLLIElement>(null);
+export const BurgerIngredients = (): React.JSX.Element => {
+  const { data } = useGetIngredientsQuery();
+  const ingredients = useMemo(() => data?.data ?? [], [data]);
+  const [currentTab, setCurrentTab] = useState<TTabValue>('bun');
+  const groupsRef = useRef<HTMLUListElement>(null);
+  const bunHeadingRef = useRef<HTMLParagraphElement>(null);
+  const sauceHeadingRef = useRef<HTMLParagraphElement>(null);
+  const mainHeadingRef = useRef<HTMLParagraphElement>(null);
 
-  const groupedIngredients = useMemo(
-    () => ({
-      bun: ingredients.filter((item) => item.type === 'bun'),
-      sauce: ingredients.filter((item) => item.type === 'sauce'),
-      main: ingredients.filter((item) => item.type === 'main'),
-    }),
-    [ingredients]
-  );
+  useEffect(() => {
+    const container = groupsRef.current;
 
-  const ingredientCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-
-    fillings.forEach((item) => {
-      counts.set(item._id, (counts.get(item._id) ?? 0) + 1);
-    });
-
-    if (bun) {
-      counts.set(bun._id, 2);
+    if (!container) {
+      return;
     }
 
-    return counts;
-  }, [bun, fillings]);
+    const handleScroll = (): void => {
+      updateCurrentTab(
+        container,
+        [
+          { value: 'bun', node: bunHeadingRef.current },
+          { value: 'sauce', node: sauceHeadingRef.current },
+          { value: 'main', node: mainHeadingRef.current },
+        ],
+        setCurrentTab
+      );
+    };
 
-  const handleTabClick = useCallback((value: string): void => {
-    setCurrentTab(value);
+    handleScroll();
+    container.addEventListener('scroll', handleScroll);
 
+    return (): void => {
+      container.removeEventListener('scroll', handleScroll);
+    };
+  }, [ingredients]);
+
+  const handleTabClick = (value: string): void => {
+    const tab = value as TTabValue;
     const section = {
-      bun: bunRef,
-      sauce: sauceRef,
-      main: mainRef,
-    }[value];
+      bun: bunHeadingRef,
+      sauce: sauceHeadingRef,
+      main: mainHeadingRef,
+    }[tab];
 
-    section?.current?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
+    setCurrentTab(tab);
+    section.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
     <section className={styles.burger_ingredients}>
@@ -121,29 +141,29 @@ export const BurgerIngredients = ({
           </Tab>
         </ul>
       </nav>
-      <ul className={`${styles.groups} custom-scroll`}>
-        <li ref={bunRef}>
+      <ul className={`${styles.groups} custom-scroll`} ref={groupsRef}>
+        <li>
           <IngredientGroup
             title="Булки"
-            items={groupedIngredients.bun}
-            counts={ingredientCounts}
-            onIngredientClick={onIngredientClick}
+            type="bun"
+            ingredients={ingredients}
+            headingRef={bunHeadingRef}
           />
         </li>
-        <li className="mt-10" ref={sauceRef}>
+        <li className="mt-10">
           <IngredientGroup
             title="Соусы"
-            items={groupedIngredients.sauce}
-            counts={ingredientCounts}
-            onIngredientClick={onIngredientClick}
+            type="sauce"
+            ingredients={ingredients}
+            headingRef={sauceHeadingRef}
           />
         </li>
-        <li className="mt-10" ref={mainRef}>
+        <li className="mt-10">
           <IngredientGroup
             title="Начинки"
-            items={groupedIngredients.main}
-            counts={ingredientCounts}
-            onIngredientClick={onIngredientClick}
+            type="main"
+            ingredients={ingredients}
+            headingRef={mainHeadingRef}
           />
         </li>
       </ul>

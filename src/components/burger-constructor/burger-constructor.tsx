@@ -2,33 +2,132 @@ import {
   Button,
   ConstructorElement,
   CurrencyIcon,
-  DragIcon,
 } from '@krgaa/react-developer-burger-ui-components';
+import { useRef, useState } from 'react';
+import { useDrop } from 'react-dnd';
 
-import type { TConstructorIngredient, TIngredient } from '@utils/types';
+import { ConstructorIngredient } from '@components/constructor-ingredient/constructor-ingredient';
+import {
+  addIngredient,
+  selectBun,
+  selectConstructorIngredients,
+  selectTotalPrice,
+  setBun,
+} from '@services/burger-constructor/slice';
+import { useCreateOrderMutation } from '@services/order/api';
+import { setOrder } from '@services/order/slice';
+import { useDispatch, useSelector } from '@services/store';
+
+import type { TIngredient } from '@utils/types';
 
 import styles from './burger-constructor.module.css';
 
-type TBurgerConstructorProps = {
-  bun: TIngredient | null;
-  fillings: TConstructorIngredient[];
-  totalPrice: number;
-  onRemoveFilling: (constructorId: string) => void;
-  onOrderClick: () => void;
+const dropIngredient = (
+  item: TIngredient,
+  dispatch: ReturnType<typeof useDispatch>
+): void => {
+  if (item.type === 'bun') {
+    dispatch(setBun(item));
+    return;
+  }
+
+  dispatch(addIngredient(item));
 };
 
-export const BurgerConstructor = ({
-  bun,
-  fillings,
-  totalPrice,
-  onRemoveFilling,
-  onOrderClick,
-}: TBurgerConstructorProps): React.JSX.Element => {
+export const BurgerConstructor = (): React.JSX.Element => {
+  const dispatch = useDispatch();
+  const bun = useSelector(selectBun);
+  const ingredients = useSelector(selectConstructorIngredients);
+  const totalPrice = useSelector(selectTotalPrice);
+  const [createOrder, { isLoading }] = useCreateOrderMutation();
+  const [hasOrderError, setHasOrderError] = useState(false);
+  const topBunRef = useRef<HTMLDivElement>(null);
+  const bottomBunRef = useRef<HTMLDivElement>(null);
+  const fillingsRef = useRef<HTMLUListElement>(null);
+
+  const [{ isOver: isTopBunOver }, topBunDrop] = useDrop<
+    TIngredient,
+    void,
+    { isOver: boolean }
+  >({
+    accept: 'bun',
+    collect: (monitor): { isOver: boolean } => ({
+      isOver: monitor.isOver(),
+    }),
+    drop: (item): void => {
+      dropIngredient(item, dispatch);
+    },
+  });
+
+  const [{ isOver: isBottomBunOver }, bottomBunDrop] = useDrop<
+    TIngredient,
+    void,
+    { isOver: boolean }
+  >({
+    accept: 'bun',
+    collect: (monitor): { isOver: boolean } => ({
+      isOver: monitor.isOver(),
+    }),
+    drop: (item): void => {
+      dropIngredient(item, dispatch);
+    },
+  });
+
+  const [{ isOver: isFillingOver }, fillingsDrop] = useDrop<
+    TIngredient,
+    void,
+    { isOver: boolean }
+  >({
+    accept: 'ingredient',
+    collect: (monitor): { isOver: boolean } => ({
+      isOver: monitor.isOver(),
+    }),
+    drop: (item): void => {
+      dropIngredient(item, dispatch);
+    },
+  });
+
+  topBunDrop(topBunRef);
+  bottomBunDrop(bottomBunRef);
+  fillingsDrop(fillingsRef);
+
+  const handleOrderClick = async (): Promise<void> => {
+    if (!bun) {
+      return;
+    }
+
+    const ingredientIds = [bun._id, ...ingredients.map((item) => item._id), bun._id];
+
+    try {
+      const result = await createOrder(ingredientIds).unwrap();
+
+      if (!result.success) {
+        setHasOrderError(true);
+        return;
+      }
+
+      setHasOrderError(false);
+      dispatch(setOrder(result));
+    } catch {
+      setHasOrderError(true);
+    }
+  };
+
+  const topPlaceholderClass = `${styles.placeholder} ${styles.placeholder_top} ${
+    isTopBunOver ? styles.placeholder_active : ''
+  }`;
+  const bottomPlaceholderClass = `${styles.placeholder} ${styles.placeholder_bottom} ${
+    isBottomBunOver ? styles.placeholder_active : ''
+  }`;
+  const fillingPlaceholderClass = `${styles.placeholder} ${
+    isFillingOver ? styles.placeholder_active : ''
+  }`;
+
   return (
     <section className={`${styles.burger_constructor} mt-25`}>
       <div className={styles.body}>
-        <div className={styles.edge}>
-          {bun && (
+        <div className={styles.edge} ref={topBunRef}>
+          {bun ? (
             <div className={styles.element}>
               <ConstructorElement
                 type="top"
@@ -38,27 +137,31 @@ export const BurgerConstructor = ({
                 thumbnail={bun.image}
               />
             </div>
+          ) : (
+            <div className={topPlaceholderClass}>
+              <p className="text text_type_main-default">Выберите булки</p>
+            </div>
           )}
         </div>
-        <ul className={`${styles.fillings} custom-scroll`}>
-          {fillings.map((item) => (
-            <li className={styles.filling} key={item.constructorId}>
-              <DragIcon type="primary" />
-              <div className={styles.element}>
-                <ConstructorElement
-                  text={item.name}
-                  price={item.price}
-                  thumbnail={item.image}
-                  handleClose={() => {
-                    onRemoveFilling(item.constructorId);
-                  }}
-                />
+        <ul className={`${styles.fillings} custom-scroll`} ref={fillingsRef}>
+          {ingredients.length === 0 ? (
+            <li className={styles.placeholder_row}>
+              <div className={fillingPlaceholderClass}>
+                <p className="text text_type_main-default">Выберите начинку</p>
               </div>
             </li>
-          ))}
+          ) : (
+            ingredients.map((item, index) => (
+              <ConstructorIngredient
+                ingredient={item}
+                index={index}
+                key={item.constructorId}
+              />
+            ))
+          )}
         </ul>
-        <div className={styles.edge}>
-          {bun && (
+        <div className={styles.edge} ref={bottomBunRef}>
+          {bun ? (
             <div className={styles.element}>
               <ConstructorElement
                 type="bottom"
@@ -68,6 +171,10 @@ export const BurgerConstructor = ({
                 thumbnail={bun.image}
               />
             </div>
+          ) : (
+            <div className={bottomPlaceholderClass}>
+              <p className="text text_type_main-default">Выберите булки</p>
+            </div>
           )}
         </div>
       </div>
@@ -76,10 +183,23 @@ export const BurgerConstructor = ({
           {totalPrice}
           <CurrencyIcon type="primary" />
         </p>
-        <Button htmlType="button" type="primary" size="large" onClick={onOrderClick}>
+        <Button
+          htmlType="button"
+          type="primary"
+          size="large"
+          onClick={() => {
+            void handleOrderClick();
+          }}
+          disabled={!bun || isLoading}
+        >
           Оформить заказ
         </Button>
       </div>
+      {hasOrderError && (
+        <p className={`${styles.error} text text_type_main-default`}>
+          Не удалось оформить заказ
+        </p>
+      )}
     </section>
   );
 };
