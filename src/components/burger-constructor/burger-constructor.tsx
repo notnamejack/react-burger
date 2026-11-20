@@ -9,6 +9,7 @@ import { useDrop } from 'react-dnd';
 import { ConstructorIngredient } from '@components/constructor-ingredient/constructor-ingredient';
 import {
   addIngredient,
+  clearConstructor,
   selectBun,
   selectConstructorIngredients,
   selectTotalPrice,
@@ -108,6 +109,7 @@ export const BurgerConstructor = (): React.JSX.Element => {
 
       setHasOrderError(false);
       dispatch(setOrder(result));
+      dispatch(clearConstructor());
     } catch {
       setHasOrderError(true);
     }
