@@ -1,16 +1,25 @@
 import { CheckMarkIcon } from '@krgaa/react-developer-burger-ui-components';
 
+import { selectOrder } from '@services/order/slice';
+import { useSelector } from '@services/store';
+
 import doneImage from '../../assets/images/done.svg';
 
 import styles from './order-details.module.css';
 
-const ORDER_NUMBER = '034536';
+export const OrderDetails = (): React.JSX.Element | null => {
+  const order = useSelector(selectOrder);
 
-export const OrderDetails = (): React.JSX.Element => {
+  if (!order) {
+    return null;
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.number}>
-        <p className={`${styles.order} text text_type_digits-large`}>{ORDER_NUMBER}</p>
+        <p className={`${styles.order} text text_type_digits-large`}>
+          {order.order.number}
+        </p>
         <p className="text text_type_main-medium">идентификатор заказа</p>
       </div>
       <div className={styles.image}>

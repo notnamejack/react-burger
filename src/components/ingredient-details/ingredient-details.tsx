@@ -1,10 +1,7 @@
-import type { TIngredient } from '@utils/types';
+import { selectViewedIngredient } from '@services/ingredient-details/slice';
+import { useSelector } from '@services/store';
 
 import styles from './ingredient-details.module.css';
-
-type TIngredientDetailsProps = {
-  ingredient: TIngredient;
-};
 
 const nutrients = [
   { key: 'calories', title: 'Калории, ккал' },
@@ -13,9 +10,13 @@ const nutrients = [
   { key: 'carbohydrates', title: 'Углеводы, г' },
 ] as const;
 
-export const IngredientDetails = ({
-  ingredient,
-}: TIngredientDetailsProps): React.JSX.Element => {
+export const IngredientDetails = (): React.JSX.Element | null => {
+  const ingredient = useSelector(selectViewedIngredient);
+
+  if (!ingredient) {
+    return null;
+  }
+
   return (
     <div className={styles.container}>
       <img className={styles.image} alt={ingredient.name} src={ingredient.image_large} />

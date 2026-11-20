@@ -2,25 +2,28 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  align-self: flex-start;
   box-sizing: border-box;
   width: 600px;
-  height: calc(100% - 100px);
   min-height: 0;
+  max-height: calc(100% - 100px);
   color: var(--text-primary-color);
 }
 
 .body {
   display: flex;
-  flex: 1;
+  flex: 1 1 auto;
   flex-direction: column;
   align-items: flex-end;
   gap: 10px;
   width: 100%;
   min-height: 0;
+  overflow: hidden;
 }
 
 .edge {
   display: flex;
+  flex-shrink: 0;
   justify-content: flex-end;
   box-sizing: border-box;
   width: 100%;
@@ -29,24 +32,18 @@
 
 .fillings {
   display: flex;
-  flex: 1;
+  flex: 0 1 auto;
   flex-direction: column;
   align-items: flex-end;
   gap: 10px;
+  box-sizing: border-box;
   width: 100%;
   min-height: 0;
   margin: 0;
   padding: 0;
   overflow-y: auto;
   list-style-type: none;
-}
-
-.filling {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
+  scrollbar-gutter: stable;
 }
 
 .element {
@@ -68,4 +65,44 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.placeholder_row {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  width: 536px;
+  max-width: 100%;
+  min-height: 80px;
+  padding: 16px;
+  color: #8585ad;
+  background-color: transparent;
+  border: 1px dashed #8585ad;
+  border-radius: 40px;
+}
+
+.placeholder_top {
+  border-radius: 88px 88px 40px 40px;
+}
+
+.placeholder_bottom {
+  border-radius: 40px 40px 88px 88px;
+}
+
+.placeholder_active {
+  border-color: #4c4cff;
+}
+
+.error {
+  margin-top: 16px;
+  padding-right: 15px;
+  color: #e52b1a;
+  text-align: right;
 }
