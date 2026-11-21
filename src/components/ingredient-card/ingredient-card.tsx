@@ -1,9 +1,9 @@
 import { Counter, CurrencyIcon } from '@krgaa/react-developer-burger-ui-components';
 import { useDrag } from 'react-dnd';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { selectIngredientCounts } from '@services/burger-constructor/slice';
-import { setViewedIngredient } from '@services/ingredient-details/slice';
-import { useDispatch, useSelector } from '@services/store';
+import { useSelector } from '@services/store';
 
 import type { TIngredient } from '@utils/types';
 
@@ -16,9 +16,10 @@ type TIngredientCardProps = {
 export const IngredientCard = ({
   ingredient,
 }: TIngredientCardProps): React.JSX.Element => {
-  const dispatch = useDispatch();
   const counts = useSelector(selectIngredientCounts);
   const count = counts[ingredient._id] ?? 0;
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [{ isDragging }, dragRef] = useDrag({
     type: ingredient.type === 'bun' ? 'bun' : 'ingredient',
@@ -29,7 +30,9 @@ export const IngredientCard = ({
   });
 
   const handleClick = (): void => {
-    dispatch(setViewedIngredient(ingredient));
+    void navigate(`/ingredients/${ingredient._id}`, {
+      state: { background: location },
+    });
   };
 
   return (
