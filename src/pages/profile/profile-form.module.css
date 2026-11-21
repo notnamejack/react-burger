@@ -1,0 +1,21 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 24px;
+  padding-top: 120px;
+}
+
+.form input::-ms-reveal,
+.form input::-ms-clear {
+  display: none;
+}
+
+.actions {
+  display: flex;
+  gap: 16px;
+}
+
+.error {
+  margin: 0;
+}

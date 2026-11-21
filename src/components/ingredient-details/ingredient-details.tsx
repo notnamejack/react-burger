@@ -1,5 +1,6 @@
-import { selectViewedIngredient } from '@services/ingredient-details/slice';
-import { useSelector } from '@services/store';
+import { useParams } from 'react-router-dom';
+
+import { useGetIngredientsQuery } from '@services/ingredients/api';
 
 import styles from './ingredient-details.module.css';
 
@@ -11,10 +12,16 @@ const nutrients = [
 ] as const;
 
 export const IngredientDetails = (): React.JSX.Element | null => {
-  const ingredient = useSelector(selectViewedIngredient);
+  const { id } = useParams();
+  const { data, isLoading, isError } = useGetIngredientsQuery();
+  const ingredient = data?.data.find((item) => item._id === id);
 
-  if (!ingredient) {
+  if (isLoading || !data) {
     return null;
+  }
+
+  if (isError || !ingredient) {
+    return <p className="text text_type_main-default">Ингредиент не найден</p>;
   }
 
   return (
