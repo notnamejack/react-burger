@@ -13,6 +13,7 @@ export const orderApi = createApi({
         url: '/orders',
         method: 'POST',
         body: { ingredients: ingredientIds },
+        auth: true,
       }),
     }),
   }),

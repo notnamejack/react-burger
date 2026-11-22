@@ -21,8 +21,14 @@
   text-decoration: none;
 }
 
-.link_active {
+.link_active,
+.link:hover {
   color: var(--text-primary-color);
+}
+
+.link_active svg,
+.link:hover svg {
+  fill: var(--text-primary-color);
 }
 
 .link_position_last {

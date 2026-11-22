@@ -4,8 +4,9 @@ import {
   useSelector as useSelectorBase,
 } from 'react-redux';
 
+import { authApi } from '@services/auth/api';
+import { authSlice } from '@services/auth/slice';
 import { burgerConstructorSlice } from '@services/burger-constructor/slice';
-import { ingredientDetailsSlice } from '@services/ingredient-details/slice';
 import { ingredientsApi } from '@services/ingredients/api';
 import { orderApi } from '@services/order/api';
 import { orderSlice } from '@services/order/slice';
@@ -15,15 +16,20 @@ import type { TypedUseSelectorHook, UseDispatch } from 'react-redux';
 const rootReducer = combineSlices(
   ingredientsApi,
   orderApi,
+  authApi,
   burgerConstructorSlice,
-  ingredientDetailsSlice,
-  orderSlice
+  orderSlice,
+  authSlice
 );
 
 export const store = configureStore({
   reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(ingredientsApi.middleware, orderApi.middleware),
+    getDefaultMiddleware().concat(
+      ingredientsApi.middleware,
+      orderApi.middleware,
+      authApi.middleware
+    ),
   devTools: import.meta.env.DEV,
 });
 

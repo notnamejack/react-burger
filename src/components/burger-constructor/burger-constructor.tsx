@@ -5,8 +5,10 @@ import {
 } from '@krgaa/react-developer-burger-ui-components';
 import { useRef, useState } from 'react';
 import { useDrop } from 'react-dnd';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { ConstructorIngredient } from '@components/constructor-ingredient/constructor-ingredient';
+import { selectIsAuthChecked, selectUser } from '@services/auth/slice';
 import {
   addIngredient,
   clearConstructor,
@@ -37,6 +39,10 @@ const dropIngredient = (
 
 export const BurgerConstructor = (): React.JSX.Element => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const user = useSelector(selectUser);
+  const isAuthChecked = useSelector(selectIsAuthChecked);
   const bun = useSelector(selectBun);
   const ingredients = useSelector(selectConstructorIngredients);
   const totalPrice = useSelector(selectTotalPrice);
@@ -93,7 +99,12 @@ export const BurgerConstructor = (): React.JSX.Element => {
   fillingsDrop(fillingsRef);
 
   const handleOrderClick = async (): Promise<void> => {
-    if (!bun) {
+    if (!bun || !isAuthChecked) {
+      return;
+    }
+
+    if (!user) {
+      void navigate('/login', { state: { from: location } });
       return;
     }
 
